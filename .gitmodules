@@ -1,0 +1,6 @@
+[submodule "libgps_mtk3339"]
+	path = libgps_mtk3339
+	url = https://github.com/stealthylabs/libgps_mtk3339
+[submodule "libssd1306"]
+	path = libssd1306
+	url = https://github.com/stealthylabs/libssd1306

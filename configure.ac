@@ -9,6 +9,7 @@
 
 AC_PREREQ([2.69])
 AC_INIT([ezracer], [0.1], [github@stealthylabs.com])
+AC_CONFIG_AUX_DIR([.])
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([src])
 AM_CONFIG_HEADER(include/ezracer_config.h)
@@ -134,5 +135,10 @@ AM_CONDITIONAL([HAVE_LIBEV], [test "x$use_libev" = "xtrue"])
 AC_SUBST([LIBEV_CFLAGS])
 AC_SUBST([LIBEV_LIBS])
 
+PKG_CHECK_MODULES([SOCKETCAN], [libsocketcan], [AC_DEFINE([HAVE_SOCKETCAN], [1], [Use libsocketcan])])
+AC_SUBST([SOCKETCAN_CFLAGS])
+AC_SUBST([SOCKETCAN_LIBS])
+
 AC_CONFIG_FILES([Makefile src/Makefile test/Makefile])
+AC_CONFIG_SUBDIRS([libgps_mtk3339 libssd1306])
 AC_OUTPUT
