@@ -27,3 +27,5 @@ ezracer
 depcomp
 *~
 test-driver
+.libs
+src/goodracer
