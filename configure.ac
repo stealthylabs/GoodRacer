@@ -8,11 +8,11 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([ezracer], [0.1], [github@stealthylabs.com])
+AC_INIT([goodracer], [0.1], [github@stealthylabs.com])
 AC_CONFIG_AUX_DIR([.])
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([src])
-AM_CONFIG_HEADER(include/ezracer_config.h)
+AM_CONFIG_HEADER(include/goodracer_config.h)
 AC_CONFIG_MACRO_DIRS([m4])
 
 # Checks for programs.

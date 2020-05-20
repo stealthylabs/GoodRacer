@@ -23,7 +23,7 @@ install-sh
 ltmain.sh
 autom4te.cache
 Makefile.in
-ezracer
+goodracer
 depcomp
 *~
 test-driver

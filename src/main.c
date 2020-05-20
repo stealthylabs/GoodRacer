@@ -1,4 +1,4 @@
-#include <ezracer_config.h>
+#include <goodracer_config.h>
 
 int main (int argc, char **argv)
 {
