@@ -11,9 +11,10 @@ AC_PREREQ([2.69])
 AC_INIT([goodracer], [0.1], [github@stealthylabs.com])
 AC_CONFIG_AUX_DIR([.])
 AM_INIT_AUTOMAKE
-AC_CONFIG_SRCDIR([src])
-AM_CONFIG_HEADER(include/goodracer_config.h)
+AC_CONFIG_SRCDIR([src/main.c])
 AC_CONFIG_MACRO_DIRS([m4])
+AM_CONFIG_HEADER(include/_goodracer_config.h)
+AX_PREFIX_CONFIG_H(include/goodracer_config.h)
 
 # Checks for programs.
 ## store user given CFLAGS
