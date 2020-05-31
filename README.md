@@ -1,5 +1,14 @@
 # GoodRacer
 
+## COMPILING
+
+**NOTE**: Clone this repository recursively otherwise the multiple submodules
+will not update.
+
+```bash
+$ git clone --recursive https://github.com/stealthylabs/GoodRacer.git
+```
+
 
 ## DEBUGGING
 
