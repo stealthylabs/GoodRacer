@@ -8,6 +8,7 @@
 #include <popt.h>
 #endif
 #include <goodracer_utils.h>
+#include <goodracer_system.h>
 
 typedef struct {
     uint32_t gps_baud_rate;
@@ -57,6 +58,7 @@ static struct poptOption gr_args_table[] = {
 void gr_args_init(gr_args_t *args)
 {
     if (args) {
+        memset(args, 0, sizeof(*args));
         args->gps_baud_rate = 9600;
     }
 }
@@ -199,7 +201,7 @@ int gr_args_parse(int argc, const char **argv, gr_args_t *args)
     return rc;
 }
 
-int main (int argc, char **argv)
+int main (int argc, const char **argv)
 {
     int rc = 0;
     gr_args_t args;
@@ -208,5 +210,16 @@ int main (int argc, char **argv)
     if ((rc = gr_args_parse(argc, (const char **)argv, &args)) < 0) {
         return rc;
     }
-    return -1;
+    gr_sys_t *sys = gr_system_setup();
+    if (!sys) {
+        GRLOG_ERROR("Failed to setup system\n");
+        return -1;
+    }
+    do {
+        /* do other setup stuff here */
+        rc = gr_system_run(sys);
+    } while (0);
+    gr_system_cleanup(sys);
+    gr_args_cleanup(&args);
+    return rc;
 }

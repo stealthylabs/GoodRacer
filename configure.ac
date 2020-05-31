@@ -36,6 +36,7 @@ AC_HEADER_TIME
 AC_HEADER_STDC
 AC_CHECK_HEADERS([errno.h features.h fcntl.h inttypes.h limits.h])
 AC_CHECK_HEADERS([unistd.h stdio.h ctype.h termios.h math.h libgen.h])
+AC_CHECK_HEADERS([signal.h sys/timerfd.h sys/eventfd.h sys/signalfd.h execinfo.h ucontext.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T
@@ -55,7 +56,7 @@ AC_C_INLINE
 
 # Checks for library functions.
 AC_FUNC_STRERROR_R
-AC_CHECK_FUNCS([memset strdup memcpy calloc ioctl])
+AC_CHECK_FUNCS([memset strdup memcpy calloc ioctl strsignal])
 AC_CHECK_FUNCS_ONCE([timegm])
 
 ## pthread using m4/ax_pthread.m4
@@ -82,7 +83,7 @@ AC_ARG_ENABLE([debug],
               [debugit="$enableval"],
               [debugit=no])
 AC_MSG_RESULT([$debugit])
-AM_CFLAGS="-Wall -Wextra -Wno-uninitialized -fPIC -pedantic -posix -std=c11 -D_DEFAULT_SOURCE -D_REENTRANT -Wno-unused-const-variable"
+AM_CFLAGS="-Wall -Wextra -Wno-uninitialized -fPIC -pedantic -posix -std=c11 -D_DEFAULT_SOURCE -D_REENTRANT -Wno-unused-const-variable -rdynamic -pie -fpie"
 
 if test x"$debugit" = x"yes"; then
     AC_DEFINE([_DEBUG],[],[Debug Mode])

@@ -3,7 +3,7 @@ ACLOCAL_AMFLAGS = $(ACLOCAL_FLAGS)
 
 bin_PROGRAMS=goodracer
 
-goodracer_SOURCES=main.c
+goodracer_SOURCES=main.c system.c
 goodracer_CFLAGS=$(AM_CFLAGS) $(POPT_CFLAGS) $(SOCKETCAN_CFLAGS)
 goodracer_CFLAGS+=-I$(top_srcdir)/libgps_mtk3339/include
 goodracer_CFLAGS+=-I$(top_srcdir)/libgps_mtk3339/src
