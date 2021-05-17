@@ -12,6 +12,11 @@
 
 typedef struct {
     uint32_t gps_baud_rate;
+    char gps_device[PATH_MAX];
+    char i2c_device[PATH_MAX];
+    uint8_t i2c_addr;
+    uint8_t i2c_width;
+    uint8_t i2c_height;
 } gr_args_t;
 
 static struct poptOption gr_args_table[] = {
@@ -23,6 +28,51 @@ static struct poptOption gr_args_table[] = {
         .val = 'B',
         .descrip = "Set the GPS baud rate. Default is 9600 bps",
         .argDescrip = "9600 | 19200 | 38400 | 57600 | 115200"
+    },
+    {
+        .longName = "gps-device",
+        .shortName = 'd',
+        .argInfo = POPT_ARG_STRING,
+        .arg = NULL,
+        .val = 'd',
+        .descrip = "Set the GPS device path. Default is /dev/serial0.",
+        .argDescrip = "/dev/serial0 | /dev/ttyUSB0 | /dev/ttyS0 etc."
+    },
+    {
+        .longName = "i2c-device",
+        .shortName = 'i',
+        .argInfo = POPT_ARG_STRING,
+        .arg = NULL,
+        .val = 'i',
+        .descrip = "Set the I2C OLED device path. Default is /dev/i2c-1.",
+        .argDescrip = "/dev/i2c-1 | /dev/i2c-0 etc."
+    },
+    {
+        .longName = "i2c-addr",
+        .shortName = 'a',
+        .argInfo = POPT_ARG_INT,
+        .arg = NULL,
+        .val = 'a',
+        .descrip = "Set the I2C OLED device address byte in hexadecimal. Default is 0x3c",
+        .argDescrip = "0x3c | 0x3d"
+    },
+    {
+        .longName = "i2c-width",
+        .shortName = 'W',
+        .argInfo = POPT_ARG_INT,
+        .arg = NULL,
+        .val = 'W',
+        .descrip = "Set the I2C OLED device width in pixels. Default is 128.",
+        .argDescrip = "128 | 96"
+    },
+    {
+        .longName = "i2c-height",
+        .shortName = 'H',
+        .argInfo = POPT_ARG_INT,
+        .arg = NULL,
+        .val = 'H',
+        .descrip = "Set the I2C OLED device height in pixels. Default is 32.",
+        .argDescrip = "32 | 64"
     },
     {
         .longName = "version",
@@ -60,12 +110,18 @@ void gr_args_init(gr_args_t *args)
     if (args) {
         memset(args, 0, sizeof(*args));
         args->gps_baud_rate = 9600;
+        snprintf(args->gps_device, sizeof(args->gps_device), "/dev/serial0");
+        snprintf(args->i2c_device, sizeof(args->i2c_device), "/dev/i2c-1");
+        args->i2c_addr = 0x3c;
+        args->i2c_width = 128;
+        args->i2c_height = 32;
     }
 }
 
 void gr_args_cleanup(gr_args_t *args)
 {
     if (args) {
+        memset(args, 0, sizeof(*args));
     }
 }
 
@@ -77,6 +133,14 @@ void gr_args_cleanup(gr_args_t *args)
 #define gr_args_parse_int16(A,B) gr_args_parse_integer(A,B,10,true,sizeof(int16_t))
 #define gr_args_parse_int32(A,B) gr_args_parse_integer(A,B,10,true,sizeof(int32_t))
 #define gr_args_parse_int64(A,B) gr_args_parse_integer(A,B,10,true,sizeof(int64_t))
+#define gr_args_parse_hex_uint8(A,B) gr_args_parse_integer(A,B,16,true,sizeof(uint8_t))
+#define gr_args_parse_hex_uint16(A,B) gr_args_parse_integer(A,B,16,true,sizeof(uint16_t))
+#define gr_args_parse_hex_uint32(A,B) gr_args_parse_integer(A,B,16,true,sizeof(uint32_t))
+#define gr_args_parse_hex_uint64(A,B) gr_args_parse_integer(A,B,16,true,sizeof(uint64_t))
+#define gr_args_parse_hex_int8(A,B) gr_args_parse_integer(A,B,16,true,sizeof(int8_t))
+#define gr_args_parse_hex_int16(A,B) gr_args_parse_integer(A,B,16,true,sizeof(int16_t))
+#define gr_args_parse_hex_int32(A,B) gr_args_parse_integer(A,B,16,true,sizeof(int32_t))
+#define gr_args_parse_hex_int64(A,B) gr_args_parse_integer(A,B,16,true,sizeof(int64_t))
 
 static int gr_args_parse_integer(const char *str, void *valp,
                     int base, bool is_unsigned, size_t vsz)
@@ -152,6 +216,67 @@ int gr_args_parse(int argc, const char **argv, gr_args_t *args)
             GRLOG_LEVEL_SET(DEBUG);
             GRLOG_DEBUG("Setting log level to DEBUG\n");
             break;
+        case 'd':
+            argbuf = poptGetOptArg(ctx);
+            if (argbuf) {
+                if (strlen(argbuf) < sizeof(args->gps_device)) {
+                    memset(args->gps_device, 0, sizeof(args->gps_device));
+                    strncpy(args->gps_device, argbuf, strlen(argbuf));
+                    GRLOG_INFO("Using GPS device: %s\n", args->gps_device);
+                } else {
+                    GRLOG_ERROR("GPS device %s is too long and max size is %zu\n",
+                            argbuf, sizeof(args->gps_device));
+                    rc = -1;
+                }
+            }
+            break;
+        case 'i':
+            argbuf = poptGetOptArg(ctx);
+            if (argbuf) {
+                if (strlen(argbuf) < sizeof(args->i2c_device)) {
+                    memset(args->i2c_device, 0, sizeof(args->i2c_device));
+                    strncpy(args->i2c_device, argbuf, strlen(argbuf));
+                    GRLOG_INFO("Using I2C OLED device: %s\n", args->i2c_device);
+                } else {
+                    GRLOG_ERROR("I2C device path %s is too long and max size is %zu\n",
+                            argbuf, sizeof(args->i2c_device));
+                    rc = -1;
+                }
+            }
+            break;
+        case 'a':
+            argbuf = poptGetOptArg(ctx);
+            if (argbuf) {
+                if (gr_args_parse_hex_uint8(argbuf, &args->i2c_addr) < 0) {
+                    GRLOG_WARN("Invalid value for I2C OLED address: %s. Using default\n", argbuf);
+                    args->i2c_addr = 0x3c;
+                } else {
+                    GRLOG_INFO("Using I2C address byte 0x%x\n", args->i2c_addr);
+                }
+            }
+            break;
+        case 'W':
+            argbuf = poptGetOptArg(ctx);
+            if (argbuf) {
+                if (gr_args_parse_uint8(argbuf, &args->i2c_width) < 0) {
+                    GRLOG_WARN("Invalid value for I2C OLED width: %s. Using default\n", argbuf);
+                    args->i2c_width = 128;
+                } else {
+                    GRLOG_INFO("Using I2C OLED width %u\n", args->i2c_width);
+                }
+            }
+            break;
+        case 'H':
+            argbuf = poptGetOptArg(ctx);
+            if (argbuf) {
+                if (gr_args_parse_uint8(argbuf, &args->i2c_height) < 0) {
+                    GRLOG_WARN("Invalid value for I2C OLED height: %s. Using default\n", argbuf);
+                    args->i2c_height = 32;
+                } else {
+                    GRLOG_INFO("Using I2C OLED height %u\n", args->i2c_height);
+                }
+            }
+            break;
         case 'B':
             argbuf = poptGetOptArg(ctx);
             if (argbuf) {
@@ -201,10 +326,27 @@ int gr_args_parse(int argc, const char **argv, gr_args_t *args)
     return rc;
 }
 
+static void goodracer_gps_error_cb(gr_sys_t *sys, gr_gps_t *gps)
+{
+    if (!sys || !gps)
+        return;
+    GRLOG_ERROR("Error callback invoked");
+}
+
+static void goodracer_gps_read_cb(gr_sys_t *sys, gr_gps_t *gps,
+        const gpsdata_data_t *datalistp, size_t num)
+{
+    if (!sys || !gps || !datalistp || num == 0)
+        return;
+    gpsdata_list_dump(datalistp, GRLOG_PTR);
+}
+
 int main (int argc, const char **argv)
 {
     int rc = 0;
     gr_args_t args;
+    gr_disp_t *disp = NULL;
+    gr_gps_t *gps = NULL;
 
     gr_args_init(&args);
     if ((rc = gr_args_parse(argc, (const char **)argv, &args)) < 0) {
@@ -216,9 +358,36 @@ int main (int argc, const char **argv)
         return -1;
     }
     do {
+        /* connect the OLED */
+        disp = gr_display_i2c_setup(args.i2c_device, args.i2c_addr,
+                args.i2c_width, args.i2c_height);
+        if (!disp) {
+            GRLOG_ERROR("failed to perform I2C OLED screen setup on device path %s", args.i2c_device);
+            rc = -1;
+            break;
+        }
+        /* connect the GPS */
+        gps = gr_gps_setup(args.gps_device, args.gps_baud_rate);
+        if (!gps) {
+            GRLOG_ERROR("failed to connect to the GPS via device path %s", args.gps_device);
+            rc = -1;
+            break;
+        }
+        rc = gr_system_set_display(sys, disp);
+        if (rc < 0) {
+            GRLOG_ERROR("Failed to set the display for the system");
+            break;
+        }
+        rc = gr_system_watch_gps(sys, gps, goodracer_gps_read_cb, goodracer_gps_error_cb);
+        if (rc < 0) {
+            GRLOG_ERROR("Failed to set the I/O watcher for the GPS in the system");
+            break;
+        }
         /* do other setup stuff here */
         rc = gr_system_run(sys);
     } while (0);
+    gr_gps_cleanup(gps);
+    gr_display_cleanup(disp);
     gr_system_cleanup(sys);
     gr_args_cleanup(&args);
     return rc;

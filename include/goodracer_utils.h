@@ -6,6 +6,8 @@
 #ifndef __GOODRACER_UTILS_H__
 #define __GOODRACER_UTILS_H__
 #include <gpsutils.h>
+#include <gpsdata.h>
+#include <ssd1306_i2c.h>
 
 #ifndef GRLOG_PTR
 #define GRLOG_PTR GPSUTILS_LOG_PTR
