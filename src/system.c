@@ -76,6 +76,7 @@ struct gr_sys_t_ {
     struct ev_loop *loop;
     size_t num_signals;
     ev_signal *signals;
+    bool verbose;
     gr_disp_t *disp;
     /* GPS watcher */
     gr_gps_t *gps;
@@ -113,7 +114,11 @@ static void gr_system_signal_cb(EV_P_ struct ev_signal *ev, int revents)
 {
     int sig = ev ? ev->signum : 0;
     if (revents & EV_SIGNAL) {
-        GRLOG_ERROR("Signal %d (%s) was thrown\n", sig, strsignal(sig));
+        if (sig == SIGINT || sig == SIGQUIT) {
+            GRLOG_WARN("Signal %d (%s) was thrown\n", sig, strsignal(sig));
+        } else {
+            GRLOG_ERROR("Signal %d (%s) was thrown\n", sig, strsignal(sig));
+        }
     } else {
         GRLOG_ERROR("Unknown Signal was thrown\n");
     }
@@ -167,6 +172,7 @@ gr_sys_t *gr_system_setup()
             rc = -1;
             break;
         }
+        sys->verbose = false;
     } while (0);
     if (rc < 0) {
         gr_system_cleanup(sys);
@@ -204,6 +210,25 @@ void gr_system_cleanup(gr_sys_t *sys)
         GR_FREE(sys->signals);
     }
     GR_FREE(sys);
+}
+
+void gr_system_set_verbose(gr_sys_t *sys, bool flag)
+{
+    if (sys) {
+        sys->verbose = flag;
+    }
+    if (flag) {
+        GRLOG_LEVEL_SET(DEBUG);
+        GRLOG_DEBUG("Setting log level to DEBUG\n");
+    } else {
+        GRLOG_DEBUG("Setting log level to INFO\n");
+        GRLOG_LEVEL_SET(INFO);
+    }
+}
+
+bool gr_system_is_verbose(const gr_sys_t *sys)
+{
+    return (sys) ? sys->verbose : true;
 }
 
 int gr_system_run(gr_sys_t *sys)

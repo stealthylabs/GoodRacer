@@ -17,6 +17,7 @@ typedef struct {
     uint8_t i2c_addr;
     uint8_t i2c_width;
     uint8_t i2c_height;
+    bool verbose;
 } gr_args_t;
 
 static struct poptOption gr_args_table[] = {
@@ -115,6 +116,7 @@ void gr_args_init(gr_args_t *args)
         args->i2c_addr = 0x3c;
         args->i2c_width = 128;
         args->i2c_height = 32;
+        args->verbose = false;
     }
 }
 
@@ -213,8 +215,8 @@ int gr_args_parse(int argc, const char **argv, gr_args_t *args)
             show_version = true;
             break;
         case 'v':
-            GRLOG_LEVEL_SET(DEBUG);
-            GRLOG_DEBUG("Setting log level to DEBUG\n");
+            args->verbose = true;
+            gr_system_set_verbose(NULL, true);
             break;
         case 'd':
             argbuf = poptGetOptArg(ctx);
@@ -298,7 +300,7 @@ int gr_args_parse(int argc, const char **argv, gr_args_t *args)
                         break;
                     }
                     args->gps_baud_rate = speed;
-                    GRLOG_DEBUG("Setting GPS Baud Rate: %d bps\n", args->gps_baud_rate);
+                    GRLOG_INFO("Setting GPS Baud Rate: %d bps\n", args->gps_baud_rate);
                 }
             }
             break;
@@ -338,7 +340,9 @@ static void goodracer_gps_read_cb(gr_sys_t *sys, gr_gps_t *gps,
 {
     if (!sys || !gps || !item)
         return;
-    gpsdata_dump(item, GRLOG_PTR);
+    if (gr_system_is_verbose(sys)) {
+        gpsdata_dump(item, GRLOG_PTR);
+    }
     //FIXME: this is such a hack
     if (disp && disp->fbp && disp->oled) {
         char buf[64] = { 0 };
@@ -355,6 +359,8 @@ static void goodracer_gps_read_cb(gr_sys_t *sys, gr_gps_t *gps,
                   gpsdata_direction_tostring(item->latitude.direction)[0]);
             ssd1306_framebuffer_draw_text_extra(disp->fbp, buf, 0, 2,
                     bbox.bottom + 4, SSD1306_FONT_CUSTOM, 4, &opts, 1, &bbox);
+            GRLOG_DEBUG("BBox: top: %d left: %d right: %d bottom: %d\n",
+                    bbox.top, bbox.left, bbox.right, bbox.bottom);
         }
         if (item->longitude.direction != GPSDATA_DIRECTION_UNSET) {
             // print the longitude
@@ -363,8 +369,19 @@ static void goodracer_gps_read_cb(gr_sys_t *sys, gr_gps_t *gps,
                   gpsdata_direction_tostring(item->longitude.direction)[0]);
             ssd1306_framebuffer_draw_text_extra(disp->fbp, buf, 0, 2,
                     bbox.bottom + 4, SSD1306_FONT_CUSTOM, 4, &opts, 1, &bbox);
+            GRLOG_DEBUG("BBox: top: %d left: %d right: %d bottom: %d\n",
+                    bbox.top, bbox.left, bbox.right, bbox.bottom);
         }
-        //ssd1306_framebuffer_bitdump(disp->fbp);
+        if (!isnan(item->speed_kmph)) {
+            snprintf(buf, sizeof(buf) - 1, "%0.04f kmph", item->speed_kmph);
+            ssd1306_framebuffer_draw_text_extra(disp->fbp, buf, 0, 2,
+                    bbox.bottom + 4, SSD1306_FONT_CUSTOM, 4, &opts, 1, &bbox);
+            GRLOG_DEBUG("BBox: top: %d left: %d right: %d bottom: %d\n",
+                    bbox.top, bbox.left, bbox.right, bbox.bottom);
+        }
+        if (gr_system_is_verbose(sys)) {
+            ssd1306_framebuffer_bitdump(disp->fbp);
+        }
         if (ssd1306_i2c_display_update(disp->oled, disp->fbp) < 0) {
             GRLOG_ERROR("Failed to update I2C display\n");
         }
@@ -388,6 +405,7 @@ int main (int argc, const char **argv)
         return -1;
     }
     do {
+        gr_system_set_verbose(sys, args.verbose);
         /* connect the OLED */
         disp = gr_display_i2c_setup(args.i2c_device, args.i2c_addr,
                 args.i2c_width, args.i2c_height);

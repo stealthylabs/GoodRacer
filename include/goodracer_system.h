@@ -19,6 +19,10 @@ void gr_system_cleanup(gr_sys_t *);
 /* run the system event loop */
 int gr_system_run(gr_sys_t *);
 
+/* verbose */
+void gr_system_set_verbose(gr_sys_t *, bool);
+bool gr_system_is_verbose(const gr_sys_t *);
+
 /* display related functions */
 typedef struct gr_disp_t_ {
     ssd1306_i2c_t *oled;
