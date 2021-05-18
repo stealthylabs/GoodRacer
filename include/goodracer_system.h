@@ -39,14 +39,13 @@ void gr_display_inc_ref(gr_disp_t *);
 typedef struct gr_gps_t_ gr_gps_t;
 
 /* tell the system about the display */
-int gr_system_set_display(gr_sys_t *, gr_disp_t *);
+int gr_system_set_display(gr_sys_t *, gr_disp_t *, bool);
 
 gr_gps_t *gr_gps_setup(const char *dev, uint32_t baud_rate);
 
 void gr_gps_cleanup(gr_gps_t *);
 
-typedef void (* gr_gps_on_read_t)(gr_sys_t *, gr_gps_t *,
-            const gpsdata_data_t *, size_t);
+typedef void (* gr_gps_on_read_t)(gr_sys_t *, gr_gps_t *, gr_disp_t *, const gpsdata_data_t *);
 typedef void (* gr_gps_on_error_t)(gr_sys_t *, gr_gps_t *);
 
 int gr_system_watch_gps(gr_sys_t *sys, gr_gps_t *gps,

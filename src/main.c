@@ -334,11 +334,41 @@ static void goodracer_gps_error_cb(gr_sys_t *sys, gr_gps_t *gps)
 }
 
 static void goodracer_gps_read_cb(gr_sys_t *sys, gr_gps_t *gps,
-        const gpsdata_data_t *datalistp, size_t num)
+        gr_disp_t *disp, const gpsdata_data_t *item)
 {
-    if (!sys || !gps || !datalistp || num == 0)
+    if (!sys || !gps || !item)
         return;
-    gpsdata_list_dump(datalistp, GRLOG_PTR);
+    gpsdata_dump(item, GRLOG_PTR);
+    //FIXME: this is such a hack
+    if (disp && disp->fbp && disp->oled) {
+        char buf[64] = { 0 };
+        ssd1306_framebuffer_clear(disp->fbp);
+        ssd1306_framebuffer_box_t bbox = { 0 };
+        ssd1306_graphics_options_t opts = {
+            .type = SSD1306_OPT_FONT_FILE,
+            .value.font_file = "/usr/share/fonts/truetype/msttcorefonts/Courier_New.ttf"
+        };
+        if (item->latitude.direction != GPSDATA_DIRECTION_UNSET) {
+            // print the latitude
+            snprintf(buf, sizeof(buf) - 1, "%d\xb0%0.04f'%c",
+                   item->latitude.degrees, item->latitude.minutes,
+                  gpsdata_direction_tostring(item->latitude.direction)[0]);
+            ssd1306_framebuffer_draw_text_extra(disp->fbp, buf, 0, 2,
+                    bbox.bottom + 4, SSD1306_FONT_CUSTOM, 4, &opts, 1, &bbox);
+        }
+        if (item->longitude.direction != GPSDATA_DIRECTION_UNSET) {
+            // print the longitude
+            snprintf(buf, sizeof(buf) - 1, "%d\xb0%0.04f'%c",
+                   item->longitude.degrees, item->longitude.minutes,
+                  gpsdata_direction_tostring(item->longitude.direction)[0]);
+            ssd1306_framebuffer_draw_text_extra(disp->fbp, buf, 0, 2,
+                    bbox.bottom + 4, SSD1306_FONT_CUSTOM, 4, &opts, 1, &bbox);
+        }
+        //ssd1306_framebuffer_bitdump(disp->fbp);
+        if (ssd1306_i2c_display_update(disp->oled, disp->fbp) < 0) {
+            GRLOG_ERROR("Failed to update I2C display\n");
+        }
+    }
 }
 
 int main (int argc, const char **argv)
@@ -373,7 +403,7 @@ int main (int argc, const char **argv)
             rc = -1;
             break;
         }
-        rc = gr_system_set_display(sys, disp);
+        rc = gr_system_set_display(sys, disp, true);
         if (rc < 0) {
             GRLOG_ERROR("Failed to set the display for the system");
             break;

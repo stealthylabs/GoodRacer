@@ -287,6 +287,7 @@ void gr_display_cleanup(gr_disp_t *disp)
                 disp->fbp = NULL;
             }
             if (disp->oled) {
+                ssd1306_i2c_display_clear(disp->oled);
                 ssd1306_i2c_close(disp->oled);
                 disp->oled = NULL;
             }
@@ -361,7 +362,7 @@ void gr_gps_cleanup(gr_gps_t *gps)
     }
 }
 
-int gr_system_set_display(gr_sys_t *sys, gr_disp_t *disp)
+int gr_system_set_display(gr_sys_t *sys, gr_disp_t *disp, bool welcome)
 {
     if (sys && disp) {
         if (sys->disp) {
@@ -371,6 +372,17 @@ int gr_system_set_display(gr_sys_t *sys, gr_disp_t *disp)
         sys->disp = disp;
         gr_display_inc_ref(disp);
         GRLOG_DEBUG("Successfully set the display pointer for the system");
+        if (welcome && disp->oled && disp->fbp) {
+            char buf[64] = { 0 };
+            ssd1306_framebuffer_box_t bbox = { 0 };
+            snprintf(buf, sizeof(buf) - 1, "GOODRACER");
+            ssd1306_framebuffer_clear(disp->fbp);
+            ssd1306_framebuffer_draw_text(disp->fbp, buf, 0, 16, 12, SSD1306_FONT_DEFAULT, 4, &bbox);
+            if (ssd1306_i2c_display_update(disp->oled, disp->fbp) < 0) {
+                GRLOG_ERROR("Failed to update display with welcome screen\n");
+                return -1;
+            }
+        }
         return 0;
     }
     return -1;
@@ -417,7 +429,12 @@ static void gr_system_gps_cb(EV_P_ ev_io *w, int revents)
                     } else {
                         GRLOG_DEBUG("Parsed %zu packets\n", onum);
                         if (sys->gps_io_read_cb) {
-                            sys->gps_io_read_cb(sys, gps, datalistp, onum);
+                            if (datalistp) {
+                                const gpsdata_data_t *item = NULL;
+                                LL_FOREACH(datalistp, item) {
+                                    sys->gps_io_read_cb(sys, gps, sys->disp, item);
+                                }
+                            }
                         }
                         gpsdata_list_free(&(datalistp));
                         datalistp = NULL;
