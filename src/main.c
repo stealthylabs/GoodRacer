@@ -352,13 +352,14 @@ static void goodracer_gps_read_cb(gr_sys_t *sys, gr_gps_t *gps,
             .type = SSD1306_OPT_FONT_FILE,
             .value.font_file = "/usr/share/fonts/truetype/msttcorefonts/Courier_New.ttf"
         };
+        const int fontsize = 3;
         if (item->latitude.direction != GPSDATA_DIRECTION_UNSET) {
             // print the latitude
             snprintf(buf, sizeof(buf) - 1, "%d\xb0%0.04f'%c",
                    item->latitude.degrees, item->latitude.minutes,
                   gpsdata_direction_tostring(item->latitude.direction)[0]);
             ssd1306_framebuffer_draw_text_extra(disp->fbp, buf, 0, 2,
-                    bbox.bottom + 4, SSD1306_FONT_CUSTOM, 4, &opts, 1, &bbox);
+                    bbox.bottom, SSD1306_FONT_CUSTOM, fontsize, &opts, 1, &bbox);
             GRLOG_DEBUG("BBox: top: %d left: %d right: %d bottom: %d\n",
                     bbox.top, bbox.left, bbox.right, bbox.bottom);
         }
@@ -368,17 +369,15 @@ static void goodracer_gps_read_cb(gr_sys_t *sys, gr_gps_t *gps,
                    item->longitude.degrees, item->longitude.minutes,
                   gpsdata_direction_tostring(item->longitude.direction)[0]);
             ssd1306_framebuffer_draw_text_extra(disp->fbp, buf, 0, 2,
-                    bbox.bottom + 4, SSD1306_FONT_CUSTOM, 4, &opts, 1, &bbox);
+                    bbox.bottom + fontsize, SSD1306_FONT_CUSTOM, fontsize, &opts, 1, &bbox);
             GRLOG_DEBUG("BBox: top: %d left: %d right: %d bottom: %d\n",
                     bbox.top, bbox.left, bbox.right, bbox.bottom);
         }
-        if (!isnan(item->speed_kmph)) {
-            snprintf(buf, sizeof(buf) - 1, "%0.04f kmph", item->speed_kmph);
-            ssd1306_framebuffer_draw_text_extra(disp->fbp, buf, 0, 2,
-                    bbox.bottom + 4, SSD1306_FONT_CUSTOM, 4, &opts, 1, &bbox);
-            GRLOG_DEBUG("BBox: top: %d left: %d right: %d bottom: %d\n",
+        snprintf(buf, sizeof(buf) - 1, "%0.04f kmph", isnan(item->speed_kmph) ? 0.0 : item->speed_kmph);
+        ssd1306_framebuffer_draw_text_extra(disp->fbp, buf, 0, 2,
+                    bbox.bottom + fontsize, SSD1306_FONT_CUSTOM, fontsize, &opts, 1, &bbox);
+        GRLOG_DEBUG("BBox: top: %d left: %d right: %d bottom: %d\n",
                     bbox.top, bbox.left, bbox.right, bbox.bottom);
-        }
         if (gr_system_is_verbose(sys)) {
             ssd1306_framebuffer_bitdump(disp->fbp);
         }
